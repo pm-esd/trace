@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
-	"github.com/uber/jaeger-client-go/zipkin"
 	"github.com/uber/jaeger-lib/metrics"
 )
 
@@ -122,6 +121,7 @@ func (t *Tracing) buildJaeger(cfg TraceConfig) (opentracing.Tracer, io.Closer, e
 			LogSpans:            cfg.LogSpans,
 		},
 	}
+
 	tracerMetrics := jaeger.NewMetrics(metrics.NullFactory, nil)
 	sampler, err := conf.Sampler.NewSampler(svrName, tracerMetrics)
 	tracerLogger := &jagerLogger{}
@@ -139,13 +139,10 @@ func (t *Tracing) buildJaeger(cfg TraceConfig) (opentracing.Tracer, io.Closer, e
 		closer io.Closer
 	)
 
-	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
+
 	tracer, closer = jaeger.NewTracer(svrName, sampler, reporter,
 		jaeger.TracerOptions.Metrics(tracerMetrics),
 		jaeger.TracerOptions.Logger(tracerLogger),
-		jaeger.TracerOptions.Injector(opentracing.HTTPHeaders, zipkinPropagator),
-		jaeger.TracerOptions.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
-		jaeger.TracerOptions.ZipkinSharedRPCSpan(true),
 	)
 
 	return tracer, closer, nil
